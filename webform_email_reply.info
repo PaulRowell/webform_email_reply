@@ -1,0 +1,8 @@
+name = Webform Email Reply
+description = A webform helper module that allows users to send an email reply to submissions
+core = 7.x
+dependencies[] = webform
+package = Webform
+
+version = "7.x-alpha"
+
