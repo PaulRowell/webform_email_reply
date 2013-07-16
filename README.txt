@@ -18,4 +18,4 @@ Installation
 
 3. Enable the required permissions.
 
-4. Now when looking at a webform submission you'll bee a "Email reply" link and tab on the page.
+4. Now when looking at a webform submission you'll see an "Email reply" link and tab on the page.
