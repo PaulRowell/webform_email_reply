@@ -2,7 +2,7 @@
 
 /**
  * @file
- *   Webform module install/schema hooks.
+ * Webform email reply module schema hook.
  */
 
 /**
