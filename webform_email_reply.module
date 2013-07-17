@@ -2,7 +2,8 @@
 
 /**
  * @file
- * This module provides a way for users to reply to webform submissions within the CMS.
+ * This module provides a way for users to reply to webform submissions within 
+ * the CMS.
  * @author Paul Rowell <www.paulrowell.com>
  */
 
@@ -15,10 +16,10 @@ function webform_email_reply_help($path) {
       $return_value = "<p>" . t("This module provides a way for users to reply to webform submissions within the CMS.") . '<br />';
       $return_value .= t("Permissions can be set to allow users to reply to all webform submissions or only those on a node the user has created.") . '<p>';
       $return_value .= "<p>" . t("All emails sent are stored in the database and can be viewed from the submission.") . '</p>';
-      return $return_value;
-
       break;
   }
+  return $return_value;
+  
 }
 
 /**
@@ -86,7 +87,7 @@ function webform_email_reply_theme() {
         'submissions' => $submissions,
         'replies' => $replies,
       ),
-    )
+    ),
   );
 
   return $theme;
@@ -113,9 +114,9 @@ function webform_email_reply_permission() {
 /**
  * A function to check if a user hass access to email reply to a webform.
  *
- * @param $node
+ * @param object $node
  *    The node for which this webform was submitted.
- * @param $submission
+ * @param object $submission
  *    The submission to email reply to.
  */
 function webform_email_reply_access($node, $submission) {
@@ -131,16 +132,17 @@ function webform_email_reply_access($node, $submission) {
 /**
  * Form to send an email reply.
  *
- * @param $form
+ * @param array $form
  *   The new form array.
- * @param $form_state
+ * @param array $form_state
  *   The current form state.
- * @param $node
+ * @param object $node
  *   The node for which this webform was submitted.
- * @param $submission
+ * @param object $submission
  *   The submission to email reply to (from webform_submitted_data).
  */
 function webform_email_reply_form($form, $form_state, $node, $submission) {
+
   webform_set_breadcrumb($node, $submission);
 
   // Set the correct page title.
@@ -190,9 +192,9 @@ function webform_email_reply_form($form, $form_state, $node, $submission) {
 /**
  * Validation of email reply.
  *
- * @param $form
+ * @param array $form
  *   The new form array.
- * @param $form_state
+ * @param array $form_state
  *   The current form state.
  */
 function webform_email_reply_form_validate($form, &$form_state) {
@@ -208,9 +210,9 @@ function webform_email_reply_form_validate($form, &$form_state) {
 /**
  * Confirmation of email reply.
  *
- * @param $form
+ * @param array $form
  *   The new form array.
- * @param $form_state
+ * @param array $form_state
  *   The current form state.
  */
 function webform_email_reply_form_submit($form, &$form_state) {
@@ -259,7 +261,7 @@ function webform_email_reply_mail($key, &$message, $params) {
 /**
  * Function to insert the email into the database.
  *
- * @param type $data
+ * @param array $data
  *   The values to insert into the database.
  */
 function webform_email_reply_insert($data) {
@@ -281,9 +283,9 @@ function webform_email_reply_insert($data) {
 /**
  * Check to see if a reply exists already for a submission.
  *
- * @param type $nid
+ * @param string $nid
  *    The node id of the webform
- * @param type $sid
+ * @param string $sid
  *    The submission id
  */
 function webform_email_reply_exists($nid, $sid) {
@@ -308,11 +310,11 @@ function webform_email_reply_exists($nid, $sid) {
 /**
  * Return a table of the email replies to a submission.
  *
- * @param type $node
+ * @param object $node
  *    The node of the submission
- * @param type $submissions
+ * @param object $submissions
  *    The submission
- * @return type
+ * @return string
  *    The table of email replies to return
  */
 function webform_email_reply_previous($node, $submissions) {
@@ -326,7 +328,8 @@ function webform_email_reply_previous($node, $submissions) {
   );
 
   // Get the submissions.
-  // @TODO second time this function gets run in a user journey - need to rethink how to store this?
+  // @TODO second time this function gets run in a user journey 
+  // need to rethink how to store this?
   $replies = webform_email_reply_exists($node->nid, $submissions->sid);
   foreach ($replies as $reply) {
     // @TODO find alternative to full user load each time?
@@ -338,5 +341,6 @@ function webform_email_reply_previous($node, $submissions) {
       $reply->message);
   }
   $output = theme('table', array('header' => $header, 'rows' => $rows));
+
   return $output;
 }
