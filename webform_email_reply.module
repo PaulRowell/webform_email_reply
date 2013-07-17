@@ -9,17 +9,17 @@
 /**
  * Implements hook_help().
  */
-function webform_email_reply_help($path, $arg) {
+function webform_email_reply_help($path) {
   switch ($path) {
     case "admin/help#webform_email_reply":
       $return_value = "<p>" . t("This module provides a way for users to reply to webform submissions within the CMS.") . '<br />';
       $return_value .= t("Permissions can be set to allow users to reply to all webform submissions or only those on a node the user has created.") . '<p>';
       $return_value .= "<p>" . t("All emails sent are stored in the database and can be viewed from the submission.") . '</p>';
       return $return_value;
+
       break;
   }
 }
-
 
 /**
  * Implements hook_webform_submission_actions().
@@ -31,10 +31,10 @@ function webform_email_reply_webform_submission_actions($node, $submission) {
       'href' => 'node/' . $node->nid . '/submission/' . $submission->sid . '/reply',
       'query' => drupal_get_destination(),
     );
-    // only display link if there are replies
+    // Only display link if there are replies.
     $replies = webform_email_reply_exists($node->nid, $submission->sid);
     if ($replies) {
-      // get number of replies
+      // Get number of replies.
       $count = count($replies);
       $actions['previous_replies'] = array(
         'title' => format_plural($count, '1 previous reply', '@count previous replies'),
@@ -81,7 +81,11 @@ function webform_email_reply_theme() {
 
   $theme = array(
     'webform_replies_table' => array(
-      'variables' => array('node' => $node, 'submissions' => $submissions, 'replies' => $replies),
+      'variables' => array(
+        'node' => $node,
+        'submissions' => $submissions,
+        'replies' => $replies,
+      ),
     )
   );
 
@@ -108,11 +112,10 @@ function webform_email_reply_permission() {
 
 /**
  * A function to check if a user hass access to email reply to a webform.
- * Cloned from webform.module
  *
- * @param type $node
+ * @param $node
  *    The node for which this webform was submitted.
- * @param type $submission
+ * @param $submission
  *    The submission to email reply to.
  */
 function webform_email_reply_access($node, $submission) {
@@ -126,7 +129,7 @@ function webform_email_reply_access($node, $submission) {
 }
 
 /**
- * Form to send an email reply
+ * Form to send an email reply.
  *
  * @param $form
  *   The new form array.
@@ -140,11 +143,11 @@ function webform_email_reply_access($node, $submission) {
 function webform_email_reply_form($form, $form_state, $node, $submission) {
   webform_set_breadcrumb($node, $submission);
 
-  //  Set the correct page title.
+  // Set the correct page title.
   drupal_set_title(t('Reply to ' . webform_submission_title($node, $submission)));
 
-  //  Keep the NID and SID in the same location as the webform_client_form().
-  //  This helps mollom identify the same fields when deleting a submission.
+  // Keep the NID and SID in the same location as the webform_client_form().
+  // This helps mollom identify the same fields when deleting a submission.
   $form['#tree'] = TRUE;
   $form['#suffix'] = '<h2>Submission</h2>' . webform_submission_render($node, $submission, NULL, 'html');
   $form['details']['nid'] = array(
@@ -193,7 +196,7 @@ function webform_email_reply_form($form, $form_state, $node, $submission) {
  *   The current form state.
  */
 function webform_email_reply_form_validate($form, &$form_state) {
-  // check each email
+  // Check each email.
   $valid_email = explode(',', $form_state['values']['details']['email']);
   foreach ($valid_email as $email) {
     if (!valid_email_address($email)) {
@@ -223,11 +226,11 @@ function webform_email_reply_form_submit($form, &$form_state) {
     'subject' => $subject,
   );
 
-  // Send each emails individually
+  // Send each emails individually.
   foreach ($emails as $email) {
     if (drupal_mail('webform_submission_reply', 'message_key', $email, language_default(), $params, $from, TRUE)) {
       drupal_set_message(t('Email sent to %email.', array('%email' => $email)));
-      // insert the values into the database
+      // Insert the values into the database.
       webform_email_reply_insert($form_state['values']['details']);
     }
     else {
@@ -260,10 +263,10 @@ function webform_email_reply_mail($key, &$message, $params) {
  *   The values to insert into the database.
  */
 function webform_email_reply_insert($data) {
-  // need the user replying to the submission
+  // Need the user replying to the submission.
   global $user;
 
-  // simple insert
+  // Simple insert.
   db_insert('webform_email_reply')
       ->fields(array(
         'sid' => $data['sid'],
@@ -276,7 +279,7 @@ function webform_email_reply_insert($data) {
 }
 
 /**
- * Check to see if a reply exists already for a submission
+ * Check to see if a reply exists already for a submission.
  *
  * @param type $nid
  *    The node id of the webform
@@ -293,7 +296,7 @@ function webform_email_reply_exists($nid, $sid) {
       ->execute()
       ->fetchAll();
 
-  // return what's found, if any
+  // Return what's found, if any.
   if ($results) {
     return $results;
   }
@@ -303,7 +306,7 @@ function webform_email_reply_exists($nid, $sid) {
 }
 
 /**
- * Return a table of the email replies to a submission
+ * Return a table of the email replies to a submission.
  *
  * @param type $node
  *    The node of the submission
@@ -322,11 +325,11 @@ function webform_email_reply_previous($node, $submissions) {
     array('data' => t('Message')),
   );
 
-  // Get the submissions
-  // @TODO secodn time this function gets run in a user journey - need to rethink how to store this
+  // Get the submissions.
+  // @TODO second time this function gets run in a user journey - need to rethink how to store this?
   $replies = webform_email_reply_exists($node->nid, $submissions->sid);
   foreach ($replies as $reply) {
-    // @TODO find alternative to full user load each time
+    // @TODO find alternative to full user load each time?
     $user = user_load($reply->uid);
     $rows[] = array(
       $reply->eid,
