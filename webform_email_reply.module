@@ -197,7 +197,7 @@ function webform_email_reply_form_validate($form, &$form_state) {
   $valid_email = explode(',', $form_state['values']['details']['email']);
   foreach ($valid_email as $email) {
     if (!valid_email_address($email)) {
-      form_set_error('details][email', 'The email address, ' . $email . ', is not valid. Please enter a valid email address.');
+      form_set_error('details][email', t('The email address, %email, is not valid. Please enter a valid email address.', array('%email' => $email)));
     }
   }
 }
