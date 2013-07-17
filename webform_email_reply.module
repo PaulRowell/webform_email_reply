@@ -146,7 +146,7 @@ function webform_email_reply_form($form, $form_state, $node, $submission) {
   webform_set_breadcrumb($node, $submission);
 
   // Set the correct page title.
-  drupal_set_title(t('Reply to ' . webform_submission_title($node, $submission)));
+  drupal_set_title(t('Reply to @title', array('@title' => webform_submission_title($node, $submission))));
 
   // Keep the NID and SID in the same location as the webform_client_form().
   // This helps mollom identify the same fields when deleting a submission.
@@ -169,7 +169,7 @@ function webform_email_reply_form($form, $form_state, $node, $submission) {
   $form['details']['subject'] = array(
     '#type' => 'textfield',
     '#title' => t('Subject'),
-    '#default_value' => t('RE: ' . $node->title),
+    '#default_value' => t('RE: @title', array('@title' => strip_tags($node->title))),
     '#required' => TRUE,
   );
   $form['details']['message'] = array(
@@ -202,7 +202,7 @@ function webform_email_reply_form_validate($form, &$form_state) {
   $valid_email = explode(',', $form_state['values']['details']['email']);
   foreach ($valid_email as $email) {
     if (!valid_email_address($email)) {
-      form_set_error('details][email', t('The email address, %email, is not valid. Please enter a valid email address.', array('%email' => $email)));
+      form_set_error('details][email', t('The email address, @email, is not valid. Please enter a valid email address.', array('@email' => $email)));
     }
   }
 }
@@ -231,12 +231,12 @@ function webform_email_reply_form_submit($form, &$form_state) {
   // Send each emails individually.
   foreach ($emails as $email) {
     if (drupal_mail('webform_submission_reply', 'message_key', $email, language_default(), $params, $from, TRUE)) {
-      drupal_set_message(t('Email sent to %email.', array('%email' => $email)));
+      drupal_set_message(t('Email sent to @email.', array('@email' => $email)));
       // Insert the values into the database.
       webform_email_reply_insert($form_state['values']['details']);
     }
     else {
-      drupal_set_message(t('There was an error sending the email to %email, please contact the site admin.', array('%email' => $email)));
+      drupal_set_message(t('There was an error sending the email to @email, please contact the site admin.', array('@email' => $email)));
     }
   }
   $form_state['redirect'] = 'node/' . $nid . '/submission/' . $sid;
@@ -290,7 +290,7 @@ function webform_email_reply_insert($data) {
  */
 function webform_email_reply_exists($nid, $sid) {
 
-  // Simple db query to get all the emails replies
+  // Simple db query to get all the emails replies.
   $results = db_select('webform_email_reply', 'r')
       ->fields('r')
       ->condition('r.nid', $nid)
@@ -314,6 +314,7 @@ function webform_email_reply_exists($nid, $sid) {
  *   The node of the submission
  * @param object $submissions
  *   The submission
+ * 
  * @return string
  *   The table of email replies to return
  */
@@ -332,7 +333,7 @@ function webform_email_reply_previous($node, $submissions) {
   // need to rethink how to store this?
   $replies = webform_email_reply_exists($node->nid, $submissions->sid);
   foreach ($replies as $reply) {
-    // @TODO find alternative to full user load each time?
+    // @TODO full user load each time, better way of doing this?
     $user = user_load($reply->uid);
     $rows[] = array(
       $reply->eid,
