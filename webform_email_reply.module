@@ -4,13 +4,13 @@
  * @file
  * This module provides a way for users to reply to webform submissions within 
  * the CMS.
- * @author Paul Rowell <www.paulrowell.com>
  */
 
 /**
  * Implements hook_help().
  */
 function webform_email_reply_help($path) {
+  $return_value = NULL;
   switch ($path) {
     case "admin/help#webform_email_reply":
       $return_value = "<p>" . t("This module provides a way for users to reply to webform submissions within the CMS.") . '<br />';
@@ -19,7 +19,6 @@ function webform_email_reply_help($path) {
       break;
   }
   return $return_value;
-
 }
 
 /**
@@ -79,8 +78,11 @@ function webform_email_reply_menu() {
  * Implements hook_theme().
  */
 function webform_email_reply_theme() {
+  $node = NULL;
+  $submissions = array();
+  $replies = array();
 
-  $theme = array(
+  return array(
     'webform_replies_table' => array(
       'variables' => array(
         'node' => $node,
@@ -89,15 +91,13 @@ function webform_email_reply_theme() {
       ),
     ),
   );
-
-  return $theme;
 }
 
 /**
  * Implements hook_permission().
  */
 function webform_email_reply_permission() {
-  $permissions = array(
+  return array(
     'send email replies to all webforms' => array(
       'title' => t('View and send email replies to all webforms'),
       'description' => t('Allows user to view and send emails in reply to any webform. Generally an administrative permission.'),
@@ -107,8 +107,6 @@ function webform_email_reply_permission() {
       'description' => t('Allows user to view and send emails in reply to a webform the author has created. Generally an administrative permission.'),
     ),
   );
-
-  return $permissions;
 }
 
 /**
@@ -151,7 +149,6 @@ function webform_email_reply_form($form, $form_state, $node, $submission) {
   // Keep the NID and SID in the same location as the webform_client_form().
   // This helps mollom identify the same fields when deleting a submission.
   $form['#tree'] = TRUE;
-  $form['#suffix'] = '<h2>Submission</h2>' . webform_submission_render($node, $submission, NULL, 'html');
   $form['details']['nid'] = array(
     '#type' => 'value',
     '#value' => $node->nid,
@@ -178,15 +175,15 @@ function webform_email_reply_form($form, $form_state, $node, $submission) {
     '#required' => TRUE,
     '#format' => 'full_html',
   );
+  $form['submit'] = array(
+    '#type' => 'submit',
+    '#value' => 'Send',
+  );
+  $form['submission'] = array(
+    '#markup' => '<p><h2>Submission</h2>' . webform_submission_render($node, $submission, NULL, 'html') . '</p>',
+  );
 
-  if (isset($_GET['destination'])) {
-    $destination = $_GET['destination'];
-  }
-  else {
-    $destination = 'node/' . $node->nid . '/submission/' . $submission->sid;
-  }
-
-  return confirm_form($form, NULL, $destination, '', t('Send'), t('Cancel'));
+  return $form;
 }
 
 /**
@@ -230,7 +227,7 @@ function webform_email_reply_form_submit($form, &$form_state) {
 
   // Send each emails individually.
   foreach ($emails as $email) {
-    if (drupal_mail('webform_submission_reply', 'message_key', $email, language_default(), $params, $from, TRUE)) {
+    if (drupal_mail('webform_email_reply', 'message_key', $email, language_default(), $params, $from, TRUE)) {
       drupal_set_message(t('Email sent to @email.', array('@email' => $email)));
       // Insert the values into the database.
       webform_email_reply_insert($form_state['values']['details']);

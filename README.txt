@@ -1,11 +1,9 @@
 Description
 -----------
 This module provides a way for users to reply to webform submissions within the 
-CMS.
-Permissions can be set to allow users to reply to all webform submissions or 
-only those on a node the user has created.
-All emails sent are stored in the database and can be viewed from the submission
-page.
+CMS. Permissions can be set to allow users to reply to all webform submissions 
+or only those on a node the user has created. All emails sent are stored in the 
+database and can be viewed from the submission page.
 
 
 Requirements
