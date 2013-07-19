@@ -53,7 +53,7 @@ function webform_email_reply_menu() {
   $items = array();
 
   $items['node/%webform_menu/submission/%webform_menu_submission/reply'] = array(
-    'title' => 'Reply to submission',
+    'title' => t('Reply to submission'),
     'load arguments' => array(1),
     'page callback' => 'drupal_get_form',
     'page arguments' => array('webform_email_reply_form', 1, 3),
@@ -63,7 +63,7 @@ function webform_email_reply_menu() {
     'type' => MENU_LOCAL_TASK,
   );
   $items['node/%webform_menu/submission/%webform_menu_submission/reply/previous'] = array(
-    'title' => 'Previous replies to submission',
+    'title' => t('Previous replies to submission'),
     'load arguments' => array(1),
     'page callback' => 'webform_email_reply_previous',
     'page arguments' => array(1, 3),
@@ -180,7 +180,7 @@ function webform_email_reply_form($form, $form_state, $node, $submission) {
     '#value' => 'Send',
   );
   $form['submission'] = array(
-    '#markup' => '<p><h2>Submission</h2>' . webform_submission_render($node, $submission, NULL, 'html') . '</p>',
+    '#markup' => '<p><h2>' . t('Submission') . '</h2>' . webform_submission_render($node, $submission, NULL, 'html') . '</p>',
   );
 
   return $form;
