@@ -119,10 +119,9 @@ function webform_email_reply_permission() {
  */
 function webform_email_reply_access($node, $submission) {
   global $user;
-  $account = isset($account) ? $account : $user;
 
-  $reply_all = user_access('send email replies to all webforms', $account);
-  $reply_own = isset($submission) && user_access('send email replies to own webforms', $account) && (($account->uid && $account->uid == $submission->uid) || isset($_SESSION['webform_submission'][$submission->sid]));
+  $reply_all = user_access('send email replies to all webforms', $user);
+  $reply_own = isset($submission) && user_access('send email replies to own webforms', $user) && (($user->uid && $user->uid == $submission->uid));
 
   return $reply_all || $reply_own;
 }
@@ -287,18 +286,22 @@ function webform_email_reply_insert($data) {
  */
 function webform_email_reply_exists($nid, $sid) {
 
-  // Simple db query to get all the emails replies.
-  $results = db_select('webform_email_reply', 'r')
-      ->fields('r')
-      ->condition('r.nid', $nid)
-      ->condition('r.sid', $sid)
-      ->addTag('node_access')
-      ->execute()
-      ->fetchAll();
+  $previous_replies = &drupal_static(__FUNCTION__);
+  if (!isset($previous_replies)) {
+    // Simple db query to get all the emails replies.
+    $results = db_select('webform_email_reply', 'r')
+        ->fields('r')
+        ->condition('r.nid', $nid)
+        ->condition('r.sid', $sid)
+        ->addTag('node_access')
+        ->execute()
+        ->fetchAll();
 
+    $previous_replies = $results;
+  }
   // Return what's found, if any.
-  if ($results) {
-    return $results;
+  if ($previous_replies) {
+    return $previous_replies;
   }
   else {
     return NULL;
@@ -336,7 +339,7 @@ function webform_email_reply_previous($node, $submissions) {
     $rows[] = array(
       $reply->eid,
       l($user->name, 'user/' . $user->uid),
-      date('dS M Y H:i', $reply->replied),
+      format_date($reply->replied, 'short'),
       $reply->message);
   }
   $output = theme('table', array('header' => $header, 'rows' => $rows));
