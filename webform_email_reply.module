@@ -33,8 +33,6 @@ function webform_email_reply_webform_submission_actions($node, $submission) {
     );
     // Only display link if there are replies.
     $replies = webform_email_reply_get_replies($node->nid, $submission->sid);
-    var_dump(webform_email_reply_get_replies('17', '111'));
-    var_dump(webform_email_reply_get_replies($node->nid, $submission->sid));
     if ($replies) {
       // Get number of replies.
       $count = count($replies);
