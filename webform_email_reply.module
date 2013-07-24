@@ -32,7 +32,9 @@ function webform_email_reply_webform_submission_actions($node, $submission) {
       'query' => drupal_get_destination(),
     );
     // Only display link if there are replies.
-    $replies = webform_email_reply_exists($node->nid, $submission->sid);
+    $replies = webform_email_reply_get_replies($node->nid, $submission->sid);
+    var_dump(webform_email_reply_get_replies('17', '111'));
+    var_dump(webform_email_reply_get_replies($node->nid, $submission->sid));
     if ($replies) {
       // Get number of replies.
       $count = count($replies);
@@ -284,9 +286,9 @@ function webform_email_reply_insert($data) {
  * @param string $sid
  *   The submission id
  */
-function webform_email_reply_exists($nid, $sid) {
+function webform_email_reply_get_replies($nid, $sid) {
 
-  $previous_replies = &drupal_static(__FUNCTION__);
+  $previous_replies  = &drupal_static(__FUNCTION__);
   if (!isset($previous_replies)) {
     // Simple db query to get all the emails replies.
     $results = db_select('webform_email_reply', 'r')
@@ -330,9 +332,7 @@ function webform_email_reply_previous($node, $submissions) {
   );
 
   // Get the submissions.
-  // @TODO second time this function gets run in a user journey
-  // need to rethink how to store this?
-  $replies = webform_email_reply_exists($node->nid, $submissions->sid);
+  $replies = webform_email_reply_get_replies($node->nid, $submissions->sid);
   foreach ($replies as $reply) {
     // @TODO full user load each time, better way of doing this?
     $user = user_load($reply->uid);
