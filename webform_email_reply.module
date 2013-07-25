@@ -286,7 +286,7 @@ function webform_email_reply_insert($data) {
  */
 function webform_email_reply_get_replies($nid, $sid) {
 
-  $previous_replies  = &drupal_static(__FUNCTION__);
+  $previous_replies  = &drupal_static(__FUNCTION__ . $nid . "_" . $sid);
   if (!isset($previous_replies)) {
     // Simple db query to get all the emails replies.
     $results = db_select('webform_email_reply', 'r')
@@ -304,7 +304,7 @@ function webform_email_reply_get_replies($nid, $sid) {
     return $previous_replies;
   }
   else {
-    return NULL;
+    return array();
   }
 }
 
