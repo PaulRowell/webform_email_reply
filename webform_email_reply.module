@@ -299,13 +299,8 @@ function webform_email_reply_get_replies($nid, $sid) {
 
     $previous_replies = $results;
   }
-  // Return what's found, if any.
-  if ($previous_replies) {
+  // Return what's found.
     return $previous_replies;
-  }
-  else {
-    return array();
-  }
 }
 
 /**
