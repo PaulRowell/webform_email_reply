@@ -121,7 +121,7 @@ function webform_email_reply_access($node, $submission) {
   global $user;
 
   $reply_all = user_access('send email replies to all webforms', $user);
-  $reply_own = isset($submission) && user_access('send email replies to own webforms', $user) && (($user->uid && $user->uid == $submission->uid));
+  $reply_own = isset($submission) && user_access('send email replies to own webforms', $user) && (($user->uid && $user->uid == $node->uid));
 
   return $reply_all || $reply_own;
 }
@@ -141,6 +141,31 @@ function webform_email_reply_form($form, $form_state, $node, $submission) {
   // Set the correct page title.
   drupal_set_title(t('Reply to @title', array('@title' => webform_submission_title($node, $submission))));
 
+  // Check text format access for the current user.
+  $full = filter_access(filter_format_load('full_html'));
+  $filtered = filter_access(filter_format_load('filtered_html'));
+  if ($full) {
+    $format = 'full_html';
+  }
+  elseif ($filtered) {
+    $format = 'filtered_html';
+  }
+  else {
+    $format = 'plain_text';
+  }
+
+  // Grab a default email, if one exists.
+  $default_email_reply = webform_email_reply_get_default($node->nid);
+
+  if ($default_email_reply) {
+    $values = $submission->data[$default_email_reply]['value'];
+    // Ever going to be multiple? Just in case.
+    $default_to_email = implode(',', $values);
+  }
+  else {
+    $default_to_email = NULL;
+  }
+
   // Keep the NID and SID in the same location as the webform_client_form().
   // This helps mollom identify the same fields when deleting a submission.
   $form['#tree'] = TRUE;
@@ -155,6 +180,7 @@ function webform_email_reply_form($form, $form_state, $node, $submission) {
   $form['details']['email'] = array(
     '#type' => 'textfield',
     '#title' => t('Email'),
+    '#default_value' => $default_to_email,
     '#description' => t('The email address(es) to send to. Multiple emails should be seperated by a comma, with no spaces.'),
     '#required' => TRUE,
   );
@@ -168,7 +194,7 @@ function webform_email_reply_form($form, $form_state, $node, $submission) {
     '#type' => 'textarea',
     '#title' => t('Message'),
     '#required' => TRUE,
-    '#format' => 'full_html',
+    '#format' => $format,
   );
   $form['submit'] = array(
     '#type' => 'submit',
@@ -335,4 +361,105 @@ function webform_email_reply_previous($node, $submissions) {
   $output = theme('table', array('header' => $header, 'rows' => $rows));
 
   return $output;
+}
+
+/**
+ * Implements hook_form_alter().
+ */
+function webform_email_reply_form_alter(&$form, $form_state, $form_id) {
+  global $user;
+
+  if ($user->uid == '1' && $form_id == 'webform_configure_form') {
+    // Get the node id.
+    $nid = $form['nid']['#value'];
+
+    // Set the select list to choose the default email.
+    $options = array('0' => 'No default');
+
+    // Get the email components.
+    $results = db_select('webform_component', 'wc')
+        ->fields('wc', array('cid', 'name'))
+        ->condition('wc.nid', $nid)
+        ->condition('wc.type', 'email')
+        ->addTag('node_access')
+        ->execute()
+        ->fetchAll();
+
+    // Add to the options list.
+    if ($results) {
+      foreach ($results as $result) {
+        $options[$result->cid] = $result->name;
+      }
+    }
+
+    // Now we have the options, set a default.
+    $default = webform_email_reply_get_default($nid);
+
+    // Start Email Reply form.
+    $form['default_email_reply'] = array(
+      '#type' => 'fieldset',
+      '#title' => t('Default email'),
+      '#collapsible' => TRUE,
+      '#collapsed' => FALSE,
+      '#weight' => -2,
+    );
+    $form['default_email_reply']['default_email'] = array(
+      '#type' => 'select',
+      '#title' => t('Select an email'),
+      '#validated' => TRUE,
+      '#options' => $options,
+      '#default_value' => $default,
+      '#description' => t('Select an email field to set as the default "To" address when replying to a submission.'),
+    );
+
+    $form['#submit'][] = 'webform_email_reply_default_submit';
+    // End Email Reply Form.
+  }
+}
+
+/**
+ * Submit handler for webform_email_reply_form_alter().
+ *
+ * This saves the selected email to be used as the default to reply to.
+ */
+function webform_email_reply_default_submit($form, &$form_state) {
+  // Get the needed values.
+  $nid = $form_state['values']['nid'];
+  $cid = $form_state['values']['default_email'];
+
+  // Are we updating or adding?
+  $default = webform_email_reply_get_default($nid);
+  if ($default) {
+    db_update('webform_email_reply_emails')
+        ->fields(array('nid' => $nid, 'cid' => $cid))
+        ->execute();
+  }
+  else {
+    db_insert('webform_email_reply_emails')
+        ->fields(array('nid' => $nid, 'cid' => $cid))
+        ->execute();
+  }
+}
+
+/**
+ * Get the default reply address for a webform.
+ * 
+ * @param string $nid
+ *   The node id of the webform
+ */
+function webform_email_reply_get_default($nid) {
+
+  $result = &drupal_static(__FUNCTION__ . $nid . "_default");
+  if (!isset($result)) {
+    // Simple db query to get the default email.
+    $result = db_select('webform_email_reply_emails', 'e')
+        ->fields('e', array('cid'))
+        ->condition('e.nid', $nid)
+        ->addTag('node_access')
+        ->execute()
+        ->fetchField();
+  }
+
+  // Return what's found.
+  return $result;
 }
