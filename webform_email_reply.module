@@ -25,6 +25,8 @@ function webform_email_reply_help($path) {
  * Implements hook_webform_submission_actions().
  */
 function webform_email_reply_webform_submission_actions($node, $submission) {
+  $actions = array();
+
   if (webform_email_reply_access($node, $submission)) {
     $actions['reply'] = array(
       'title' => t('Email reply'),
@@ -158,7 +160,15 @@ function webform_email_reply_form($form, $form_state, $node, $submission) {
   $default_email_reply = webform_email_reply_get_default($node->nid);
 
   if ($default_email_reply) {
-    $values = $submission->data[$default_email_reply]['value'];
+    // Quick check here to see what version of webform
+    if (isset($submission->data[$default_email_reply]['value'])) {
+      // Webform 7.x-3.x
+      $values = $submission->data[$default_email_reply]['value'];
+    }
+    else {
+      // Webform 7.x-4.x
+      $values = $submission->data[$default_email_reply];
+    }
     // Ever going to be multiple? Just in case.
     $default_to_email = implode(',', $values);
   }
@@ -200,10 +210,15 @@ function webform_email_reply_form($form, $form_state, $node, $submission) {
     '#type' => 'submit',
     '#value' => t('Send'),
   );
+  // For different webform module versions
+  $submission_array = webform_submission_render($node, $submission, NULL, 'html');
+  if (isset($submission_array['#node'])) {
+    // Hasn't been rendered yet (webform 7.x-4.x), let's do that.
+    $submission_array = drupal_render($submission_array);
+  }
   $form['submission'] = array(
-    '#markup' => '<p><h2>' . t('Submission') . '</h2>' . webform_submission_render($node, $submission, NULL, 'html') . '</p>',
+    '#markup' => '<p><h2>' . t('Submission') . '</h2>' . $submission_array . '</p>',
   );
-
   return $form;
 }
 
@@ -429,9 +444,10 @@ function webform_email_reply_default_submit($form, &$form_state) {
 
   // Are we updating or adding?
   $default = webform_email_reply_get_default($nid);
-  if ($default) {
+  if ($default !== FALSE) {
     db_update('webform_email_reply_emails')
-        ->fields(array('nid' => $nid, 'cid' => $cid))
+        ->fields(array('cid' => $cid))
+        ->condition('nid', $nid, '=')
         ->execute();
   }
   else {

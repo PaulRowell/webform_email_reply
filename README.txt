@@ -18,7 +18,15 @@ Installation
 
 2.Login as an administrator. Enable the module in the "Administer" -> "Modules".
 
-3.Enable the required permissions.
+3.Enable the required permissions, the two options are:
+  a.View and send email replies to all webforms
+  Allows user to view and send emails in reply to any webform.
+  b. View and send email replies to own webforms
+  Allows user to view and send emails in reply to a webform the author has 
+  created.
 
-4.Now when looking at a webform submission you'll see an "Email reply" link and 
+4.Under the 'Form Settings' tab select which email field you want to use as the
+default 'To' address when replying to an email.
+
+5.Now when looking at a webform submission you'll see an "Email reply" link and 
 tab on the page.
