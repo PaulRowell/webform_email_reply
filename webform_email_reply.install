@@ -2,7 +2,7 @@
 
 /**
  * @file
- *   Webform module install/schema hooks.
+ * Webform email reply module schema hook.
  */
 
 /**
@@ -52,6 +52,27 @@ function webform_email_reply_schema() {
       ),
     ),
     'primary key' => array('eid'),
+  );
+
+  $schema['webform_email_reply_emails'] = array(
+    'description' => 'Holds the default email to send a reply to in each webform.',
+    'fields' => array(
+      'nid' => array(
+        'description' => 'The node identifier of a webform.',
+        'type' => 'int',
+        'unsigned' => TRUE,
+        'not null' => TRUE,
+        'default' => 0,
+      ),
+      'cid' => array(
+        'description' => 'The id of the component to use as the default email.',
+        'type' => 'int',
+        'unsigned' => TRUE,
+        'not null' => TRUE,
+        'default' => 0,
+      ),
+    ),
+    'primary key' => array('nid'),
   );
 
   return $schema;

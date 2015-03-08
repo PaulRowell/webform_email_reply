@@ -3,4 +3,3 @@ description = A webform helper module that allows users to send an email reply t
 core = 7.x
 dependencies[] = webform
 package = Webform
-
