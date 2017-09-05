@@ -40,6 +40,11 @@ function webform_email_reply_schema() {
         'not null' => TRUE,
         'default' => 0,
       ),
+      'from_address' => array(
+        'description' => 'The e-mail "from" e-mail address that will be used. This may be a string, the special key "default" or a numeric value. If a numeric value is used, the value of a component will be substituted on submission.',
+        'type' => 'text',
+        'not null' => FALSE,
+      ),
       'replied' => array(
         'description' => 'Timestamp of when the reply was sent',
         'type' => 'int',
@@ -71,9 +76,36 @@ function webform_email_reply_schema() {
         'not null' => TRUE,
         'default' => 0,
       ),
+      'from_option' => array(
+        'description' => 'The type of source to use as the default from email.',
+        'type' => 'int',
+        'unsigned' => TRUE,
+        'not null' => TRUE,
+        'default' => 0,
+      ),
     ),
     'primary key' => array('nid'),
   );
 
   return $schema;
+}
+
+/**
+ * Add options for from emails to each webform node.
+ */
+function webform_email_reply_update_7001() {
+  $spec = array(
+    'description' => 'The e-mail "from" e-mail address that will be used. This may be a string, the special key "default" or a numeric value. If a numeric value is used, the value of a component will be substituted on submission.',
+    'type' => 'text',
+    'not null' => FALSE,
+  );
+  db_add_field('webform_email_reply', 'from_address', $spec);
+  $spec = array(
+    'description' => 'The type of source to use as the default from email.',
+    'type' => 'int',
+    'unsigned' => TRUE,
+    'not null' => TRUE,
+    'default' => 0,
+  );
+  db_add_field('webform_email_reply_emails', 'from_option', $spec);
 }

@@ -2,7 +2,7 @@
 
 /**
  * @file
- * This module provides a way for users to reply to webform submissions within 
+ * This module provides a way for users to reply to webform submissions within
  * the CMS.
  */
 
@@ -137,7 +137,7 @@ function webform_email_reply_access($node, $submission) {
  *   The submission to email reply to (from webform_submitted_data).
  */
 function webform_email_reply_form($form, $form_state, $node, $submission) {
-
+  global $user;
   webform_set_breadcrumb($node, $submission);
 
   // Set the correct page title.
@@ -154,6 +154,16 @@ function webform_email_reply_form($form, $form_state, $node, $submission) {
   }
   else {
     $format = 'plain_text';
+  }
+
+  // Grab a default email, if one exists.
+  $default_email_reply_from = webform_email_reply_get_default_from_option($node->nid);
+
+  if ($default_email_reply_from === "1") {
+    $default_from_email = $user->mail;
+  }
+  else {
+    $default_from_email = variable_get('site_mail', '');
   }
 
   // Grab a default email, if one exists.
@@ -187,11 +197,18 @@ function webform_email_reply_form($form, $form_state, $node, $submission) {
     '#type' => 'value',
     '#value' => $submission->sid,
   );
+  $form['details']['from_address'] = array(
+    '#type' => 'textfield',
+    '#title' => t('From'),
+    '#default_value' => $default_from_email,
+    '#description' => t('The email address to send from.'),
+    '#required' => TRUE,
+  );
   $form['details']['email'] = array(
     '#type' => 'textfield',
     '#title' => t('Email'),
     '#default_value' => $default_to_email,
-    '#description' => t('The email address(es) to send to. Multiple emails should be seperated by a comma, with no spaces.'),
+    '#description' => t('The email address(es) to send to. Multiple emails should be separated by a comma, with no spaces.'),
     '#required' => TRUE,
   );
   $form['details']['subject'] = array(
@@ -231,7 +248,10 @@ function webform_email_reply_form($form, $form_state, $node, $submission) {
  *   The current form state.
  */
 function webform_email_reply_form_validate($form, &$form_state) {
-  // Check each email.
+  $from_email = $form_state['values']['details']['from_address'];
+  if (!valid_email_address($from_email)) {
+    form_set_error('details][from_address', t('The from email address, @email, is not valid. Please enter a valid email address.', array('@email' => $from_email)));
+  }
   $valid_email = explode(',', $form_state['values']['details']['email']);
   foreach ($valid_email as $email) {
     if (!valid_email_address($email)) {
@@ -261,11 +281,14 @@ function webform_email_reply_form_submit($form, &$form_state) {
     'subject' => $subject,
   );
 
-  $from = variable_get('site_mail', '');
+  $from_address = $form_state['values']['details']['from_address'];
   // Send each emails individually.
   foreach ($emails as $email) {
-    if (drupal_mail('webform_email_reply', 'message_key', $email, language_default(), $params, $from, TRUE)) {
-      drupal_set_message(t('Email sent to @email.', array('@email' => $email)));
+    if (drupal_mail('webform_email_reply', 'message_key', $email, language_default(), $params, $from_address, TRUE)) {
+      drupal_set_message(t('Reply email sent to @email, from @from_address.', array(
+        '@email' => $email,
+        '@from_address' => $from_address,
+      )));
       // Insert the values into the database.
       webform_email_reply_insert($form_state['values']['details']);
     }
@@ -298,20 +321,21 @@ function webform_email_reply_mail($key, &$message, $params) {
  * @param array $data
  *   The values to insert into the database.
  */
-function webform_email_reply_insert($data) {
+function webform_email_reply_insert(array $data) {
   // Need the user replying to the submission.
   global $user;
 
   // Simple insert.
   db_insert('webform_email_reply')
-      ->fields(array(
-        'sid' => $data['sid'],
-        'nid' => $data['nid'],
-        'uid' => $user->uid,
-        'replied' => time(),
-        'message' => $data['message'],
-      ))
-      ->execute();
+    ->fields(array(
+      'sid' => $data['sid'],
+      'nid' => $data['nid'],
+      'uid' => $user->uid,
+      'from_address' => $data['from_address'],
+      'replied' => time(),
+      'message' => $data['message'],
+    ))
+    ->execute();
 }
 
 /**
@@ -348,7 +372,7 @@ function webform_email_reply_get_replies($nid, $sid) {
  *   The node of the submission
  * @param object $submissions
  *   The submission
- * 
+ *
  * @return string
  *   The table of email replies to return
  */
@@ -369,7 +393,7 @@ function webform_email_reply_previous($node, $submissions) {
     $user = user_load($reply->uid);
     $rows[] = array(
       $reply->eid,
-      theme('username', array('account' => $user)),
+      theme('username', array('account' => $user)) . '<br>' . $reply->from_address,
       format_date($reply->replied, 'short'),
       check_plain($reply->message));
   }
@@ -413,10 +437,21 @@ function webform_email_reply_form_alter(&$form, $form_state, $form_id) {
     // Start Email Reply form.
     $form['default_email_reply'] = array(
       '#type' => 'fieldset',
-      '#title' => t('Default email'),
+      '#title' => t('Default reply emails'),
       '#collapsible' => TRUE,
       '#collapsed' => FALSE,
       '#weight' => -2,
+    );
+    $form['default_email_reply']['from_option'] = array(
+      '#type' => 'select',
+      '#title' => t('Select a from email'),
+      '#validated' => TRUE,
+      '#options' => array(
+        0 => t('Site Default Email: @mail', array('@mail' => variable_get('site_mail', ''))),
+        1 => t("The current user's email who replies. (e.g. @mail)", array('@mail' => $user->mail)),
+      ),
+      '#default_value' => webform_email_reply_get_default_from_option($nid),
+      '#description' => t('Select an email field to set as the default "From" address when replying to a submission.'),
     );
     $form['default_email_reply']['default_email'] = array(
       '#type' => 'select',
@@ -441,25 +476,21 @@ function webform_email_reply_default_submit($form, &$form_state) {
   // Get the needed values.
   $nid = $form_state['values']['nid'];
   $cid = $form_state['values']['default_email'];
+  $from_option = $form_state['values']['from_option'];
 
-  // Are we updating or adding?
-  $default = webform_email_reply_get_default($nid);
-  if ($default !== FALSE) {
-    db_update('webform_email_reply_emails')
-        ->fields(array('cid' => $cid))
-        ->condition('nid', $nid, '=')
-        ->execute();
-  }
-  else {
-    db_insert('webform_email_reply_emails')
-        ->fields(array('nid' => $nid, 'cid' => $cid))
-        ->execute();
-  }
+  db_merge('webform_email_reply_emails')
+    ->key(array('nid' => $nid))
+    ->fields(array(
+      'nid' => $nid,
+      'cid' => $cid,
+      'from_option' => $from_option,
+    ))
+    ->execute();
 }
 
 /**
  * Get the default reply address for a webform.
- * 
+ *
  * @param string $nid
  *   The node id of the webform
  */
@@ -477,5 +508,28 @@ function webform_email_reply_get_default($nid) {
   }
 
   // Return what's found.
+  return $result;
+}
+
+/**
+ * Get the default reply from address for a webform.
+ *
+ * @param int $nid
+ *   The node id of the webform.
+ *
+ * @return int
+ *   The email address option.
+ */
+function webform_email_reply_get_default_from_option($nid) {
+  $result = &drupal_static(__FUNCTION__ . $nid . '_default');
+  if (!isset($result)) {
+    $result = db_select('webform_email_reply_emails', 'e')
+      ->fields('e', array('from_option'))
+      ->condition('e.nid', $nid)
+      ->addTag('node_access')
+      ->execute()
+      ->fetchField();
+  }
+
   return $result;
 }
