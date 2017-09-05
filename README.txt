@@ -28,5 +28,7 @@ Installation
 4.Under the 'Form Settings' tab select which email field you want to use as the
 default 'To' address when replying to an email.
 
+You can now also select the default ‘from’ address.
+
 5.Now when looking at a webform submission you'll see an "Email reply" link and 
 tab on the page.
